@@ -1,74 +1,101 @@
-import React from 'react';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import React, { Component } from 'react'
+import LinearGradient from 'react-native-linear-gradient'
+import AsyncStorage from '@react-native-community/async-storage'
+import { Text, View, TouchableOpacity, Image } from 'react-native'
 
-const myIcon = <Icon name="add" size={30} color="#333" />;
+import Ticket from '../../components/Ticket/index'
+import { styles } from './styles';
+import Metrics from '../../metrics/metrics'
+
+class Main extends Component {
+
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            count: 0,
+            ativado: false,
+            att: false,
+            cupons: 0
+        }
+        this.countTickets = this.countTickets.bind(this)
+    }
+
+    async componentDidMount() {
+
+        //await AsyncStorage.setItem('qtdTickets', '0')
+        //await AsyncStorage.setItem('cupons', '0')
+
+        await AsyncStorage.getItem('ativo', (err, res) => {
+            this.setState({ ativado: res ? true : false })
+        })
+        await AsyncStorage.getItem('qtdTickets', (err, res) => {
+            this.setState({ count: parseInt(res), att: true })
+        })
+        await AsyncStorage.getItem('cupons', (err, res) => {
+            this.setState({ cupons: parseInt(res), att: true })
+        })
+    }
+
+    async countTickets(qtdTickets) {
+
+        if (qtdTickets === 10) {
+
+            await AsyncStorage.multiSet([['cupons', String(this.state.cupons + 1)], ['qtdTickets', String(this.state.count)]], async () => {
+                await this.setState({ count: 0, cupons: this.state.cupons + 1 })
+            })
+
+            return
+        }
+
+        if (!this.state.ativado) {
+            await AsyncStorage.setItem('ativo', 'true')
+            await AsyncStorage.setItem('cupons', '0')
+        }
+
+        await AsyncStorage.setItem('qtdTickets', String(qtdTickets))
+    }
 
 
-import {
-  Text, Image, StyleSheet, Dimensions, ImageBackground, StatusBar,
-} from 'react-native';
+    render() {
+        return (
+            <View style={styles.container}>
+                <View style={styles.containerLogo}>
+                    <Image style={styles.logo} source={require('../../../assets/images/logo-.png')} />
+                </View>
+                <LinearGradient
+                    colors={[Metrics.colors.primary, Metrics.colors.secondary, Metrics.colors.tertiary]}
+                    start={{ x: 1, y: 0.3 }}
+                    end={{ x: 1, y: 0.8 }}
+                    style={styles.dataUser}>
+                    <View style={styles.descriptionStore}>
+                        <Text style={styles.descriptionOne}>BARBEARIA DO FULANO</Text>
+                        <Text style={styles.descriptionTwo}>R: Aristides de Melo, 798 - Jundiaí</Text>
+                    </View>
+                    <View style={styles.containerInfo}>
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  fileName: {
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  instructions: {
-    color: '#DDD',
-    fontSize: 14,
-    marginTop: 20,
-    textAlign: 'center',
-  },
-  logo: {
-    height: Dimensions.get('window').height * 0.11,
-    marginVertical: Dimensions.get('window').height * 0.11,
-    width: Dimensions.get('window').height * 0.11 * (1950 / 662),
-  },
-  welcome: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-});
+                        {this.state.att &&
+                            <Ticket
+                                countTickets={this.countTickets}
+                                count={this.state.count} />
+                        }
+                    </View>
+                    <View style={styles.containerFooter}>
+                        <View style={styles.containerCount}>
+                            <Text style={styles.textCount}>{this.state.cupons}</Text>
+                            <Text style={styles.textCount2}>{this.state.cupons < 2 ? ' Cupom' : ' Cupons'}</Text>
+                        </View>
+                        <View style={styles.containerButton}>
+                            <TouchableOpacity style={styles.button}>
+                                <Text style={styles.textButton}>Usar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </LinearGradient>
+            </View>
+        )
+    }
 
-const Main = () => (
-  <ImageBackground
-    source={{
-      uri: 'https://s3-sa-east-1.amazonaws.com/rocketseat-cdn/background.png',
-    }}
-    style={styles.container}
-    resizeMode="cover"
-  >
-    <StatusBar barStyle="light-content" backgroundColor="#7159c1" />
-    <Image
-      source={{
-        uri: 'https://s3-sa-east-1.amazonaws.com/rocketseat-cdn/rocketseat_logo.png',
-      }}
-      style={styles.logo}
-      resizeMode="contain"
-    />
-    <Text style={styles.welcome}>Baseado no Template Básico da Rocketseat!</Text>
-    <Text style={styles.instructions}>https://github.com/Rocketseat/react-native-template-rocketseat-basic</Text>
-    <Text style={styles.instructions}>Essa é a tela principal da sua aplicação</Text>
-    <Text style={styles.instructions}>Você pode editar a tela no arquivo:</Text>
-    <Text style={[styles.instructions, styles.fileName]}>src/pages/Main/index.js</Text>
-    
-    <Text style={[styles.instructions, styles.fileName]}>Este app está configurado para utilizar:</Text>
-    <Text style={styles.instructions}>Firebase (Auth, Database) version 5.3.x</Text>
-    <Text style={styles.instructions}>Lembrar de substituir o google-services.json pelo do seu Projeto</Text>
-    <Text style={styles.instructions}>Vector-icons MaterialIcons.ttf, EvilIcons.ttf (editar em android/build.gradle)</Text>
-
-    
-
-    {myIcon}
-
-  </ImageBackground>
-);
+};
 
 export default Main;
